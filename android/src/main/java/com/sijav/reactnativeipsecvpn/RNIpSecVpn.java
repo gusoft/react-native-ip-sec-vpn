@@ -111,7 +111,7 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
         profileInfo.putString("Address", address);
         profileInfo.putString("UserName", username);
         profileInfo.putString("Password", password);
-        profileInfo.putString("VpnType", "");
+        profileInfo.putString("VpnType", vpnType);
         profileInfo.putString("CertAlias", password);
         profileInfo.putInt("MTU", mtu);
         
