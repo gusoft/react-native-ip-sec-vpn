@@ -19,6 +19,18 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 import org.strongswan.android.logic.VpnStateService;
 import org.strongswan.android.logic.*;
 import org.strongswan.android.data.*;
+import java.security.KeyStore;
+import java.security.cert.*;
+
+import android.content.*;
+import android.content.pm.PackageManager;
+import android.app.Service;
+import android.net.*;
+import android.os.*;
+import android.util.Log;
+import java.io.*;
+import java.util.List;
+import org.json.*;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -73,7 +85,7 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void connect(String address, String username, String password, String vpnType, Integer mtu, String base64caCert, String base64cert, String userCertPassword, String certAlias, Promise promise) {
+    public void connect(String address, String username, String password, String vpnType, Integer mtu, String b64CaCert, String b64UserCert, String userCertPassword, String certAlias, Promise promise) throws Exception {
         if(_RNIpSecVpnStateHandler.vpnStateService == null){
             promise.reject("E_SERVICE_NOT_STARTED", "Service not started yet");
             return;
@@ -112,7 +124,7 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
         profileInfo.putString("UserName", username);
         profileInfo.putString("Password", password);
         profileInfo.putString("VpnType", vpnType);
-        profileInfo.putString("CertAlias", password);
+        profileInfo.putString("CertAlias", certAlias);
         profileInfo.putInt("MTU", mtu);
         
         _RNIpSecVpnStateHandler.vpnStateService.connect(profileInfo, true);

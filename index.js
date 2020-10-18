@@ -39,7 +39,7 @@ var VpnType;
     VpnType["IKEV2_EAP_TLS"] = "ikev2-eap-tls";
     VpnType["IKEV2_BYOD_EAP"] = "ikev2-byod-eap";
 })(VpnType = exports.VpnType || (exports.VpnType = {}));
-exports.connect = (address, username, password, vpnType, mtu, base64caCert, base64cert, certAlias, userCertPassword) => react_native_1.NativeModules.RNIpSecVpn.connect(address || "", username || "", password || "", vpnType || "", mtu || 1400, base64caCert || "", base64cert || "", userCertPassword || "", certAlias || "");
+exports.connect = (address, username, password, vpnType, mtu, b64CaCert, b64UserCert, certAlias, userCertPassword) => react_native_1.NativeModules.RNIpSecVpn.connect(address || "", username || "", password || "", vpnType || "", mtu || 1400, b64CaCert || "", b64UserCert || "", userCertPassword || "", certAlias || "");
 exports.getCurrentState = react_native_1.NativeModules.RNIpSecVpn.getCurrentState;
 exports.getCharonErrorState = react_native_1.NativeModules.RNIpSecVpn.getCharonErrorState;
 exports.disconnect = react_native_1.NativeModules.RNIpSecVpn.disconnect;
