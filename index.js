@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.disconnect = exports.getCharonErrorState = exports.getCurrentState = exports.connect = exports.prepare = exports.onStateChangedListener = exports.removeOnStateChangeListener = exports.STATE_CHANGED_EVENT_NAME = exports.CharonErrorState = exports.VpnState = void 0;
+exports.disconnect = exports.getCharonErrorState = exports.getCurrentState = exports.connect = exports.VpnType = exports.prepare = exports.onStateChangedListener = exports.removeOnStateChangeListener = exports.STATE_CHANGED_EVENT_NAME = exports.CharonErrorState = exports.VpnState = void 0;
 const react_native_1 = require("react-native");
 var VpnState;
 (function (VpnState) {
@@ -31,7 +31,15 @@ exports.onStateChangedListener = (callback) => {
     return stateChanged.addListener(exports.STATE_CHANGED_EVENT_NAME, (e) => callback(e));
 };
 exports.prepare = react_native_1.NativeModules.RNIpSecVpn.prepare;
-exports.connect = (address, username, password, vpnType, mtu) => react_native_1.NativeModules.RNIpSecVpn.connect(address || "", username || "", password || "", vpnType || "", mtu || 1400);
+var VpnType;
+(function (VpnType) {
+    VpnType["IKEV2_EAP"] = "ikev2-eap";
+    VpnType["IKEV2_CERT"] = "ikev2-cert";
+    VpnType["IKEV2_CERT_EAP"] = "ikev2-cert-eap";
+    VpnType["IKEV2_EAP_TLS"] = "ikev2-eap-tls";
+    VpnType["IKEV2_BYOD_EAP"] = "ikev2-byod-eap";
+})(VpnType = exports.VpnType || (exports.VpnType = {}));
+exports.connect = (address, username, password, vpnType, mtu, base64caCert, base64cert, certAlias, userCertPassword) => react_native_1.NativeModules.RNIpSecVpn.connect(address || "", username || "", password || "", vpnType || "", mtu || 1400, base64caCert || "", base64cert || "", userCertPassword || "", certAlias || "");
 exports.getCurrentState = react_native_1.NativeModules.RNIpSecVpn.getCurrentState;
 exports.getCharonErrorState = react_native_1.NativeModules.RNIpSecVpn.getCharonErrorState;
 exports.disconnect = react_native_1.NativeModules.RNIpSecVpn.disconnect;

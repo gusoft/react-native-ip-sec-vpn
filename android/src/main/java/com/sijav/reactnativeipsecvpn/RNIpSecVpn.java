@@ -17,6 +17,8 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import org.strongswan.android.logic.VpnStateService;
+import org.strongswan.android.logic.*;
+import org.strongswan.android.data.*;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -71,7 +73,7 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void connect(String address, String username, String password, String vpnType, Integer mtu, Promise promise) {
+    public void connect(String address, String username, String password, String vpnType, Integer mtu, String base64caCert, String base64cert, String userCertPassword, String certAlias, Promise promise) {
         if(_RNIpSecVpnStateHandler.vpnStateService == null){
             promise.reject("E_SERVICE_NOT_STARTED", "Service not started yet");
             return;
@@ -91,12 +93,28 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
             return;
         }
 
+        UserCredentialManager.getInstance().storeCredentials(b64UserCert.getBytes(), userCertPassword.toCharArray());
+
+         // Decode the CA certificate from base64 to an X509Certificate
+         byte[] decoded = android.util.Base64.decode(b64CaCert.getBytes(), 0);
+         CertificateFactory factory = CertificateFactory.getInstance("X.509");
+         InputStream in = new ByteArrayInputStream(decoded);
+         X509Certificate certificate = (X509Certificate)factory.generateCertificate(in);
+ 
+         // And then import it into the Strongswan LocalCertificateStore
+         KeyStore store = KeyStore.getInstance("LocalCertificateStore");
+         store.load(null, null);
+         store.setCertificateEntry(null, certificate);
+         TrustedCertificateManager.getInstance().reset();
+
         Bundle profileInfo = new Bundle();
         profileInfo.putString("Address", address);
         profileInfo.putString("UserName", username);
         profileInfo.putString("Password", password);
-        profileInfo.putString("VpnType", password);
+        profileInfo.putString("VpnType", "");
+        profileInfo.putString("CertAlias", password);
         profileInfo.putInt("MTU", mtu);
+        
         _RNIpSecVpnStateHandler.vpnStateService.connect(profileInfo, true);
         promise.resolve(null);
     }
