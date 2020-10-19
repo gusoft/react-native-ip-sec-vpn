@@ -37,7 +37,7 @@ public class VpnProfile implements Cloneable
 	public static final int FLAGS_STRICT_REVOCATION = 1 << 3;
 	public static final int FLAGS_RSA_PSS = 1 << 4;
 
-	private String mName, mGateway, mUsername, mPassword, mCertificate, mUserCertificate;
+	private String mName, mGateway, mUsername, mPassword, mCertificate, mUserCertificate, mUserCertificatePassword;
 	private String mRemoteId, mLocalId, mExcludedSubnets, mIncludedSubnets, mSelectedApps;
 	private String mIkeProposal, mEspProposal, mDnsServers;
 	private Integer mMTU, mPort, mSplitTunneling, mNATKeepAlive, mFlags;
@@ -188,6 +188,16 @@ public class VpnProfile implements Cloneable
 	public void setUserCertificateAlias(String alias)
 	{
 		this.mUserCertificate = alias;
+	}
+
+	public String getUserCertificatePassword()
+	{
+		return mUserCertificatePassword;
+	}
+
+	public void setUserCertificatePassword(String password)
+	{
+		this.mUserCertificatePassword = password;
 	}
 
 	public String getLocalId()

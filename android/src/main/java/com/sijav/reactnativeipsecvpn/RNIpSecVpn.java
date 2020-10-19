@@ -125,6 +125,7 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
         profileInfo.putString("Password", password);
         profileInfo.putString("VpnType", vpnType);
         profileInfo.putString("CertAlias", certAlias);
+        profileInfo.putString("UserCertPassword", userCertPassword);
         profileInfo.putInt("MTU", mtu);
         
         _RNIpSecVpnStateHandler.vpnStateService.connect(profileInfo, true);
