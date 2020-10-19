@@ -114,10 +114,10 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
          X509Certificate certificate = (X509Certificate)factory.generateCertificate(in);
  
          // And then import it into the Strongswan LocalCertificateStore
-         KeyStore store = KeyStore.getInstance("LocalCertificateStore");
-         store.load(null, null);
-         store.setCertificateEntry(null, certificate);
-         TrustedCertificateManager.getInstance().reset();
+        //  KeyStore store = KeyStore.getInstance("LocalCertificateStore");
+        //  store.load(null, null);
+        //  store.setCertificateEntry(null, certificate);
+        //  TrustedCertificateManager.getInstance().reset();
 
         Bundle profileInfo = new Bundle();
         profileInfo.putString("Address", address);
