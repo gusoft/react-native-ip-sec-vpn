@@ -31,6 +31,7 @@ import android.util.Log;
 import java.io.*;
 import java.util.List;
 import org.json.*;
+import org.strongswan.android.security.LocalCertificateKeyStoreProvider;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -49,6 +50,7 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
         Intent vpnStateServiceIntent = new Intent(context, VpnStateService.class);
         _RNIpSecVpnStateHandler = new RNIpSecVpnStateHandler(this);
         context.bindService(vpnStateServiceIntent, _RNIpSecVpnStateHandler, Service.BIND_AUTO_CREATE);
+        Security.addProvider(new LocalCertificateKeyStoreProvider());
     }
 
 
@@ -114,8 +116,8 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
          X509Certificate certificate = (X509Certificate)factory.generateCertificate(in);
  
          // And then import it into the Strongswan LocalCertificateStore
-         KeyStore store = KeyStore.getInstance("LocalCertificateStore");
          promise.reject("PrepareError", "keystore created");
+         KeyStore store = KeyStore.getInstance("LocalCertificateStore");
 
          store.load(null, null); // create keystore
          store.setCertificateEntry(null, certificate);
@@ -166,4 +168,13 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
         }
         promise.resolve(null);
     }
+
+    /**
+	 * Returns the current application context
+	 * @return context
+	 */
+	public static ReactApplicationContext getContext()
+	{
+		return reactContext;
+	}
 }
