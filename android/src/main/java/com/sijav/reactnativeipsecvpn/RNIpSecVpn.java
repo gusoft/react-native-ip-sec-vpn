@@ -119,7 +119,7 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
          KeyStore store = KeyStore.getInstance("LocalCertificateStore");
 
          store.load(null, null); // create keystore
-         store.setCertificateEntry(null, certificate);
+         store.setCertificateEntry(certAlias, certificate);
          TrustedCertificateManager.getInstance().reset();
 
         Bundle profileInfo = new Bundle();
