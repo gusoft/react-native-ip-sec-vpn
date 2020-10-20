@@ -2,7 +2,7 @@
  * Copyright (C) 2013 Tobias Brunner
  * Copyright (C) 2012 Christoph Buehler
  * Copyright (C) 2012 Patrick Loetscher
- * HSR Hochschule fuer Technik Rapperswil
+ * Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -17,13 +17,13 @@
 
 package org.strongswan.android.logic.imc.collectors;
 
-import android.content.ContentResolver;
-import android.content.Context;
+import java.util.Locale;
 
 import org.strongswan.android.logic.imc.attributes.Attribute;
 import org.strongswan.android.logic.imc.attributes.SettingsAttribute;
 
-import java.util.Locale;
+import android.content.ContentResolver;
+import android.content.Context;
 
 public class SettingsCollector implements Collector
 {

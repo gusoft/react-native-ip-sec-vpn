@@ -2,7 +2,7 @@
  * Copyright (C) 2013 Tobias Brunner
  * Copyright (C) 2012 Christoph Buehler
  * Copyright (C) 2012 Patrick Loetscher
- * HSR Hochschule fuer Technik Rapperswil
+ * Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -17,14 +17,14 @@
 
 package org.strongswan.android.logic.imc.collectors;
 
-import org.strongswan.android.logic.imc.attributes.Attribute;
-import org.strongswan.android.logic.imc.attributes.PortFilterAttribute;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.strongswan.android.logic.imc.attributes.Attribute;
+import org.strongswan.android.logic.imc.attributes.PortFilterAttribute;
 
 public class PortFilterCollector implements Collector
 {

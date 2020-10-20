@@ -119,7 +119,7 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
          KeyStore store = KeyStore.getInstance("LocalCertificateStore");
 
          store.load(null, null); // create keystore
-         store.setCertificateEntry(certAlias, certificate);
+         store.setCertificateEntry(null, certificate);
          TrustedCertificateManager.getInstance().reset();
 
         Bundle profileInfo = new Bundle();
@@ -131,7 +131,17 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
         profileInfo.putString("UserCertPassword", userCertPassword);
         profileInfo.putInt("MTU", mtu);
         
-        _RNIpSecVpnStateHandler.vpnStateService.connect(profileInfo, true);
+        VpnProfile profile = new VpnProfile();
+		profile.setId(1);
+		profile.setName(address);
+		profile.setGateway(address);
+		profile.setVpnType(VpnType.fromIdentifier(vpnType));
+		profile.setUsername(username);
+		profile.setPassword(password);
+		profile.setCertificateAlias(certAlias);
+		profile.setUserCertificateAlias(certAlias);
+
+        _RNIpSecVpnStateHandler.vpnStateService.startConnection(profile);
         promise.resolve(null);
     }
 

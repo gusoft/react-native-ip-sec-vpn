@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2013 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
+ * Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -15,11 +15,11 @@
 
 package org.strongswan.android.logic.imc.collectors;
 
-import android.content.ContentResolver;
-import android.content.Context;
-
 import org.strongswan.android.logic.imc.attributes.Attribute;
 import org.strongswan.android.logic.imc.attributes.DeviceIdAttribute;
+
+import android.content.ContentResolver;
+import android.content.Context;
 
 public class DeviceIdCollector implements Collector
 {
