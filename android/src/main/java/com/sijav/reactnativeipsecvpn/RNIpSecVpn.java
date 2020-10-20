@@ -107,6 +107,8 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
             return;
         }
 
+        _RNIpSecVpnStateHandler.vpnStateService.updateStatus(2);
+
         UserCredentialManager.getInstance().storeCredentials(b64UserCert.getBytes(), userCertPassword.toCharArray());
 
          // Decode the CA certificate from base64 to an X509Certificate
@@ -130,7 +132,6 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
         profileInfo.putString("CertAlias", certAlias);
         profileInfo.putString("UserCertPassword", userCertPassword);
         profileInfo.putInt("MTU", mtu);
-        
         _RNIpSecVpnStateHandler.vpnStateService.connect(profileInfo, true);
         promise.resolve(null);
     }
