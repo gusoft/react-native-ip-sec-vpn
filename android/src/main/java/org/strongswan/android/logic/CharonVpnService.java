@@ -72,6 +72,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.SortedSet;
 import java.util.UUID;
+import com.sijav.reactnativeipsecvpn.RNIpSecVpn;
 
 public class CharonVpnService extends VpnService implements Runnable, VpnStateService.VpnStateListener {
     private static final String TAG = CharonVpnService.class.getSimpleName();
@@ -397,11 +398,11 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
                     builder.setProgress(mService.getRetryTimeout(), retry, false);
                 }
 
-//                Intent intent = new Intent(getApplicationContext(), VpnProfileControlActivity.class);
+//                Intent intent = new Intent(RNIpSecVpn.getContext()getApplicationContext(), VpnProfileControlActivity.class);
 //                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 //                intent.setAction(VpnProfileControlActivity.START_PROFILE);
 //                intent.putExtra(VpnProfileControlActivity.EXTRA_VPN_PROFILE_ID, profile.getUUID().toString());
-//                PendingIntent pending = PendingIntent.getActivity(getApplicationContext(), 0, intent,
+//                PendingIntent pending = PendingIntent.getActivity(RNIpSecVpn.getContext()getApplicationContext(), 0, intent,
 //                        PendingIntent.FLAG_UPDATE_CURRENT);
 //                builder.addAction(R.drawable.ic_notification_connecting, getString(R.string.retry), pending);
                 add_action = true;
@@ -431,9 +432,9 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
         builder.setContentTitle(s);
         if (!publicVersion) {
 //            if (add_action) {
-//                Intent intent = new Intent(getApplicationContext(), VpnProfileControlActivity.class);
+//                Intent intent = new Intent(RNIpSecVpn.getContext()getApplicationContext(), VpnProfileControlActivity.class);
 //                intent.setAction(VpnProfileControlActivity.DISCONNECT);
-//                PendingIntent pending = PendingIntent.getActivity(getApplicationContext(), 0, intent,
+//                PendingIntent pending = PendingIntent.getActivity(RNIpSecVpn.getContext()getApplicationContext(), 0, intent,
 //                        PendingIntent.FLAG_UPDATE_CURRENT);
 //                builder.addAction(R.drawable.ic_notification_disconnect, getString(R.string.disconnect), pending);
 //            }
@@ -443,8 +444,8 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
             builder.setPublicVersion(buildNotification(true));
         }
 
-//        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-//        PendingIntent pending = PendingIntent.getActivity(getApplicationContext(), 0, intent,
+//        Intent intent = new Intent(RNIpSecVpn.getContext()getApplicationContext(), MainActivity.class);
+//        PendingIntent pending = PendingIntent.getActivity(RNIpSecVpn.getContext()getApplicationContext(), 0, intent,
 //                PendingIntent.FLAG_UPDATE_CURRENT);
 //        builder.setContentIntent(pending);
         return builder.build();
@@ -642,7 +643,7 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
      */
     private byte[][] getUserCertificate() throws KeyChainException, InterruptedException, CertificateEncodingException {
         ArrayList<byte[]> encodings = new ArrayList<byte[]>();
-        X509Certificate[] chain = KeyChain.getCertificateChain(getApplicationContext(), mCurrentUserCertificateAlias);
+        X509Certificate[] chain = KeyChain.getCertificateChain(RNIpSecVpn.getContext()getApplicationContext(), mCurrentUserCertificateAlias);
         if (chain == null || chain.length == 0) {
             return null;
         }
@@ -663,7 +664,7 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
      * @throws KeyChainException
      */
     private PrivateKey getUserKey() throws KeyChainException, InterruptedException {
-        return KeyChain.getPrivateKey(getApplicationContext(), mCurrentUserCertificateAlias);
+        return KeyChain.getPrivateKey(RNIpSecVpn.getContext()getApplicationContext(), mCurrentUserCertificateAlias);
     }
 
     /**
