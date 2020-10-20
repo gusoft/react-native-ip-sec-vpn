@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2013 Tobias Brunner
- * Hochschule fuer Technik Rapperswil
+ * HSR Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -15,18 +15,18 @@
 
 package org.strongswan.android.logic.imc;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+import android.util.Xml;
+
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
-
-import android.os.Parcel;
-import android.os.Parcelable;
-import android.util.Xml;
 
 public class RemediationInstruction implements Parcelable
 {
@@ -50,7 +50,7 @@ public class RemediationInstruction implements Parcelable
 		dest.writeStringList(mItems);
 	}
 
-	public static final Parcelable.Creator<RemediationInstruction> CREATOR = new Creator<RemediationInstruction>() {
+	public static final Creator<RemediationInstruction> CREATOR = new Creator<RemediationInstruction>() {
 
 		@Override
 		public RemediationInstruction[] newArray(int size)

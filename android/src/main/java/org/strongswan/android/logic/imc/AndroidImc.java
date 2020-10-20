@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2013 Tobias Brunner
- * Hochschule fuer Technik Rapperswil
+ * HSR Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -15,6 +15,8 @@
 
 package org.strongswan.android.logic.imc;
 
+import android.content.Context;
+
 import org.strongswan.android.logic.imc.attributes.Attribute;
 import org.strongswan.android.logic.imc.attributes.AttributeType;
 import org.strongswan.android.logic.imc.collectors.Collector;
@@ -24,8 +26,6 @@ import org.strongswan.android.logic.imc.collectors.PortFilterCollector;
 import org.strongswan.android.logic.imc.collectors.ProductInformationCollector;
 import org.strongswan.android.logic.imc.collectors.SettingsCollector;
 import org.strongswan.android.logic.imc.collectors.StringVersionCollector;
-
-import android.content.Context;
 
 public class AndroidImc
 {

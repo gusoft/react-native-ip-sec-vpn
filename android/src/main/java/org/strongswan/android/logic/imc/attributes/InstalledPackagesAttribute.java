@@ -2,7 +2,7 @@
  * Copyright (C) 2013 Tobias Brunner
  * Copyright (C) 2012 Christoph Buehler
  * Copyright (C) 2012 Patrick Loetscher
- * Hochschule fuer Technik Rapperswil
+ * HSR Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -17,11 +17,11 @@
 
 package org.strongswan.android.logic.imc.attributes;
 
-import java.util.LinkedList;
+import android.util.Pair;
 
 import org.strongswan.android.utils.BufferedByteWriter;
 
-import android.util.Pair;
+import java.util.LinkedList;
 
 /**
  * PA-TNC Installed Packages attribute (see section 4.2.7 of RFC 5792)
