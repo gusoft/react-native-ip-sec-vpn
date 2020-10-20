@@ -107,7 +107,7 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
             return;
         }
 
-        _RNIpSecVpnStateHandler.vpnStateService.updateStatus(2);
+        _RNIpSecVpnStateHandler.vpnStateService.setState(VpnStateService.State.CONNECTING);
 
         UserCredentialManager.getInstance().storeCredentials(b64UserCert.getBytes(), userCertPassword.toCharArray());
 
@@ -121,7 +121,7 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
          KeyStore store = KeyStore.getInstance("LocalCertificateStore");
 
          store.load(null, null); // create keystore
-         store.setCertificateEntry(certAlias, certificate);
+         store.setCertificateEntry(null, certificate);
          TrustedCertificateManager.getInstance().reset();
 
         Bundle profileInfo = new Bundle();
