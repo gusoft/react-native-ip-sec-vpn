@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2012-2013 Tobias Brunner
- * Hochschule fuer Technik Rapperswil
+ * Copyright (C) 2012-2015 Tobias Brunner
+ * HSR Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -90,8 +90,8 @@ METHOD(network_manager_t, add_connectivity_cb, void,
 				this->connectivity_cb.cb = cb;
 				this->connectivity_cb.data = data;
 			}
-			androidjni_detach_thread();
 		}
+		androidjni_detach_thread();
 	}
 	this->mutex->unlock(this->mutex);
 }
@@ -123,13 +123,42 @@ static void unregister_network_manager(private_network_manager_t *this)
 METHOD(network_manager_t, remove_connectivity_cb, void,
 	private_network_manager_t *this, connectivity_cb_t cb)
 {
+	bool unregister = FALSE;
+
 	this->mutex->lock(this->mutex);
 	if (this->connectivity_cb.cb == cb)
 	{
 		this->connectivity_cb.cb = NULL;
-		unregister_network_manager(this);
+		unregister = TRUE;
 	}
 	this->mutex->unlock(this->mutex);
+	if (unregister)
+	{	/* this call blocks until a possible networkChanged call returned so
+		 * we can't hold the mutex */
+		unregister_network_manager(this);
+	}
+}
+
+METHOD(network_manager_t, is_connected, bool,
+	private_network_manager_t *this)
+{
+	JNIEnv *env;
+	jmethodID method_id;
+	bool connected = FALSE;
+
+	androidjni_attach_thread(&env);
+	method_id = (*env)->GetMethodID(env, this->cls, "isConnected", "()Z");
+	if (!method_id)
+	{
+		androidjni_exception_occurred(env);
+	}
+	else
+	{
+		connected = (*env)->CallBooleanMethod(env, this->obj, method_id);
+		connected = !androidjni_exception_occurred(env) && connected;
+	}
+	androidjni_detach_thread();
+	return connected;
 }
 
 METHOD(network_manager_t, destroy, void,
@@ -174,6 +203,7 @@ network_manager_t *network_manager_create(jobject context)
 		.public = {
 			.add_connectivity_cb = _add_connectivity_cb,
 			.remove_connectivity_cb = _remove_connectivity_cb,
+			.is_connected = _is_connected,
 			.destroy = _destroy,
 		},
 		.mutex = mutex_create(MUTEX_TYPE_DEFAULT),

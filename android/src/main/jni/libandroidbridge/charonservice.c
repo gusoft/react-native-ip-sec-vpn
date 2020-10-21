@@ -1,8 +1,8 @@
 /*
- * Copyright (C) 2012-2013 Tobias Brunner
+ * Copyright (C) 2012-2020 Tobias Brunner
  * Copyright (C) 2012 Giuliano Grassi
  * Copyright (C) 2012 Ralf Sager
- * Hochschule fuer Technik Rapperswil
+ * HSR Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -25,7 +25,9 @@
 #include "android_jni.h"
 #include "backend/android_attr.h"
 #include "backend/android_creds.h"
+#include "backend/android_fetcher.h"
 #include "backend/android_private_key.h"
+#include "backend/android_scheduler.h"
 #include "backend/android_service.h"
 #include "kernel/android_ipsec.h"
 #include "kernel/android_net.h"
@@ -43,7 +45,8 @@
 #define ANDROID_RETRASNMIT_TRIES 3
 #define ANDROID_RETRANSMIT_TIMEOUT 2.0
 #define ANDROID_RETRANSMIT_BASE 1.4
-#define ANDROID_FRAGMENT_SIZE 1400
+#define ANDROID_KEEPALIVE_INTERVAL 45
+#define ANDROID_KEEPALIVE_DPD_MARGIN 20
 
 typedef struct private_charonservice_t private_charonservice_t;
 
@@ -81,11 +84,6 @@ struct private_charonservice_t {
 	 * NetworkManager instance (accessed via JNI)
 	 */
 	network_manager_t *network_manager;
-
-	/**
-	 * Handle network events
-	 */
-	android_net_t *net_handler;
 
 	/**
 	 * CharonVpnService reference
@@ -220,7 +218,7 @@ failed:
 /**
  * Bypass a single socket
  */
-static bool bypass_single_socket(intptr_t fd, private_charonservice_t *this)
+static bool bypass_single_socket(private_charonservice_t *this, int fd)
 {
 	JNIEnv *env;
 	jmethodID method_id;
@@ -247,16 +245,24 @@ failed:
 	return FALSE;
 }
 
+CALLBACK(bypass_single_socket_cb, void,
+	intptr_t fd, va_list args)
+{
+	private_charonservice_t *this;
+
+	VA_ARGS_VGET(args, this);
+	bypass_single_socket(this, fd);
+}
+
 METHOD(charonservice_t, bypass_socket, bool,
 	private_charonservice_t *this, int fd, int family)
 {
 	if (fd >= 0)
 	{
 		this->sockets->insert_last(this->sockets, (void*)(intptr_t)fd);
-		return bypass_single_socket((intptr_t)fd, this);
+		return bypass_single_socket(this, fd);
 	}
-	this->sockets->invoke_function(this->sockets, (void*)bypass_single_socket,
-								   this);
+	this->sockets->invoke_function(this->sockets, bypass_single_socket_cb, this);
 	return TRUE;
 }
 
@@ -399,18 +405,48 @@ METHOD(charonservice_t, get_network_manager, network_manager_t*,
 /**
  * Initiate a new connection
  *
- * @param gateway			gateway address (gets owned)
- * @param username			username (gets owned)
- * @param password			password (gets owned)
+ * @param settings			configuration settings (gets owned)
  */
-static void initiate(char *type, char *gateway, char *username, char *password)
+static void initiate(settings_t *settings)
 {
 	private_charonservice_t *this = (private_charonservice_t*)charonservice;
 
+	lib->settings->set_str(lib->settings,
+						"charon.plugins.tnc-imc.preferred_language",
+						settings->get_str(settings, "global.language", "en"));
+	lib->settings->set_bool(lib->settings,
+						"charon.plugins.revocation.enable_crl",
+						settings->get_bool(settings, "global.crl", TRUE));
+	lib->settings->set_bool(lib->settings,
+						"charon.plugins.revocation.enable_ocsp",
+						settings->get_bool(settings, "global.ocsp", TRUE));
+	lib->settings->set_bool(lib->settings,
+						"charon.rsa_pss",
+						settings->get_bool(settings, "global.rsa_pss", FALSE));
+	/* this is actually the size of the complete IKE/IP packet, so if the MTU
+	 * for the TUN devices has to be reduced to pass traffic the IKE packets
+	 * will be a bit smaller than necessary as there is no IPsec overhead like
+	 * for the tunneled traffic (but compensating that seems like overkill) */
+	lib->settings->set_int(lib->settings,
+						"charon.fragment_size",
+						settings->get_int(settings, "global.mtu",
+										  ANDROID_DEFAULT_MTU));
+	/* use configured interval, or an increased default to save battery power */
+	lib->settings->set_int(lib->settings,
+						"charon.keep_alive",
+						settings->get_int(settings, "global.nat_keepalive",
+										  ANDROID_KEEPALIVE_INTERVAL));
+	/* send DPDs if above interval is exceeded, use a static value for now */
+	lib->settings->set_int(lib->settings,
+						"charon.keep_alive_dpd_margin",
+						ANDROID_KEEPALIVE_DPD_MARGIN);
+
+	/* reload plugins after changing settings */
+	lib->plugins->reload(lib->plugins, NULL);
+
 	this->creds->clear(this->creds);
 	DESTROY_IF(this->service);
-	this->service = android_service_create(this->creds, type, gateway,
-										   username, password);
+	this->service = android_service_create(this->creds, settings);
 }
 
 /**
@@ -422,14 +458,12 @@ static bool charonservice_register(plugin_t *plugin, plugin_feature_t *feature,
 	private_charonservice_t *this = (private_charonservice_t*)charonservice;
 	if (reg)
 	{
-		this->net_handler = android_net_create();
 		lib->credmgr->add_set(lib->credmgr, &this->creds->set);
 		charon->attributes->add_handler(charon->attributes,
 										&this->attr->handler);
 	}
 	else
 	{
-		this->net_handler->destroy(this->net_handler);
 		lib->credmgr->remove_set(lib->credmgr, &this->creds->set);
 		charon->attributes->remove_handler(charon->attributes,
 										   &this->attr->handler);
@@ -451,13 +485,15 @@ static void set_options(char *logfile)
 					"charon.plugins.android_log.loglevel", ANDROID_DEBUG_LEVEL);
 	/* setup file logger */
 	lib->settings->set_str(lib->settings,
-					"charon.filelog.%s.time_format", "%b %e %T", logfile);
+					"charon.filelog.android.path", logfile);
+	lib->settings->set_str(lib->settings,
+					"charon.filelog.android.time_format", "%b %e %T");
 	lib->settings->set_bool(lib->settings,
-					"charon.filelog.%s.append", FALSE, logfile);
+					"charon.filelog.android.append", TRUE);
 	lib->settings->set_bool(lib->settings,
-					"charon.filelog.%s.flush_line", TRUE, logfile);
+					"charon.filelog.android.flush_line", TRUE);
 	lib->settings->set_int(lib->settings,
-					"charon.filelog.%s.default", ANDROID_DEBUG_LEVEL, logfile);
+					"charon.filelog.android.default", ANDROID_DEBUG_LEVEL);
 
 	lib->settings->set_int(lib->settings,
 					"charon.retransmit_tries", ANDROID_RETRASNMIT_TRIES);
@@ -465,10 +501,12 @@ static void set_options(char *logfile)
 					"charon.retransmit_timeout", ANDROID_RETRANSMIT_TIMEOUT);
 	lib->settings->set_double(lib->settings,
 					"charon.retransmit_base", ANDROID_RETRANSMIT_BASE);
-	lib->settings->set_int(lib->settings,
-					"charon.fragment_size", ANDROID_FRAGMENT_SIZE);
+	lib->settings->set_bool(lib->settings,
+					"charon.initiator_only", TRUE);
 	lib->settings->set_bool(lib->settings,
 					"charon.close_ike_on_child_failure", TRUE);
+	lib->settings->set_bool(lib->settings,
+					"charon.check_current_path", TRUE);
 	/* setting the source address breaks the VpnService.protect() function which
 	 * uses SO_BINDTODEVICE internally.  the addresses provided to the kernel as
 	 * auxiliary data have precedence over this option causing a routing loop if
@@ -482,19 +520,6 @@ static void set_options(char *logfile)
 	 * so lets disable IPv6 for now to avoid issues with dual-stack gateways */
 	lib->settings->set_bool(lib->settings,
 					"charon.plugins.socket-default.use_ipv6", FALSE);
-	/* don't install virtual IPs via kernel-netlink */
-	lib->settings->set_bool(lib->settings,
-					"charon.install_virtual_ip", FALSE);
-	/* kernel-netlink should not trigger roam events, we use Android's
-	 * ConnectivityManager for that, much less noise */
-	lib->settings->set_bool(lib->settings,
-					"charon.plugins.kernel-netlink.roam_events", FALSE);
-	/* ignore tun devices (it's mostly tun0 but it may already be taken, ignore
-	 * some others too), also ignore lo as a default route points to it when
-	 * no connectivity is available */
-	lib->settings->set_str(lib->settings,
-					"charon.interfaces_ignore", "lo, tun0, tun1, tun2, tun3, "
-					"tun4");
 
 #ifdef USE_BYOD
 	lib->settings->set_str(lib->settings,
@@ -512,15 +537,21 @@ static void set_options(char *logfile)
  * Initialize the charonservice object
  */
 static void charonservice_init(JNIEnv *env, jobject service, jobject builder,
-							   jboolean byod)
+							   char *appdir, jboolean byod)
 {
 	private_charonservice_t *this;
 	static plugin_feature_t features[] = {
 		PLUGIN_CALLBACK(kernel_ipsec_register, kernel_android_ipsec_create),
 			PLUGIN_PROVIDE(CUSTOM, "kernel-ipsec"),
+		PLUGIN_CALLBACK(kernel_net_register, kernel_android_net_create),
+			PLUGIN_PROVIDE(CUSTOM, "kernel-net"),
 		PLUGIN_CALLBACK(charonservice_register, NULL),
 			PLUGIN_PROVIDE(CUSTOM, "android-backend"),
 				PLUGIN_DEPENDS(CUSTOM, "libcharon"),
+				PLUGIN_DEPENDS(CERT_DECODE, CERT_X509_CRL),
+		PLUGIN_REGISTER(FETCHER, android_fetcher_create),
+			PLUGIN_PROVIDE(FETCHER, "http://"),
+			PLUGIN_PROVIDE(FETCHER, "https://"),
 	};
 
 	INIT(this,
@@ -536,7 +567,7 @@ static void charonservice_init(JNIEnv *env, jobject service, jobject builder,
 			.get_network_manager = _get_network_manager,
 		},
 		.attr = android_attr_create(),
-		.creds = android_creds_create(),
+		.creds = android_creds_create(appdir),
 		.builder = vpnservice_builder_create(builder),
 		.network_manager = network_manager_create(service),
 		.sockets = linked_list_create(),
@@ -591,17 +622,22 @@ static void segv_handler(int signal)
 }
 
 /**
+ * Register this logger as default before we have the bus available
+ */
+static void __attribute__ ((constructor))register_logger()
+{
+	dbg = dbg_android;
+}
+
+/**
  * Initialize charon and the libraries via JNI
  */
 JNI_METHOD(CharonVpnService, initializeCharon, jboolean,
-	jobject builder, jstring jlogfile, jboolean byod)
+	jobject builder, jstring jlogfile, jstring jappdir, jboolean byod)
 {
 	struct sigaction action;
 	struct utsname utsname;
-	char *logfile, *plugins;
-
-	/* logging for library during initialization, as we have no bus yet */
-	dbg = dbg_android;
+	char *logfile, *appdir, *plugins;
 
 	/* initialize library */
 	if (!library_init(NULL, "charon"))
@@ -610,11 +646,17 @@ JNI_METHOD(CharonVpnService, initializeCharon, jboolean,
 		return FALSE;
 	}
 
+	if (android_sdk_version >= ANDROID_MARSHMALLOW)
+	{
+		/* use a custom scheduler so the app is woken when jobs have to run */
+		lib->scheduler = android_scheduler_create(this, lib->scheduler);
+	}
+
 	/* set options before initializing other libraries that might read them */
 	logfile = androidjni_convert_jstring(env, jlogfile);
+
 	set_options(logfile);
 	free(logfile);
-
 
 	if (!libipsec_init())
 	{
@@ -631,15 +673,19 @@ JNI_METHOD(CharonVpnService, initializeCharon, jboolean,
 		return FALSE;
 	}
 
-	charon->load_loggers(charon, NULL, FALSE);
+	charon->load_loggers(charon);
 
-	charonservice_init(env, this, builder, byod);
+	appdir = androidjni_convert_jstring(env, jappdir);
+	charonservice_init(env, this, builder, appdir, byod);
+	free(appdir);
 
 	if (uname(&utsname) != 0)
 	{
 		memset(&utsname, 0, sizeof(utsname));
 	}
-	DBG1(DBG_DMN, "Starting IKE charon daemon (strongSwan "VERSION", %s %s, %s)",
+	DBG1(DBG_DMN, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
+	DBG1(DBG_DMN, "Starting IKE service (strongSwan "VERSION", %s, %s, "
+		 "%s %s, %s)", android_version_string, android_device_string,
 		  utsname.sysname, utsname.release, utsname.machine);
 
 #ifdef PLUGINS_BYOD
@@ -694,14 +740,67 @@ JNI_METHOD(CharonVpnService, deinitializeCharon, void)
  * Initiate SA
  */
 JNI_METHOD(CharonVpnService, initiate, void,
-	jstring jtype, jstring jgateway, jstring jusername, jstring jpassword)
+	jstring jconfig)
 {
-	char *type, *gateway, *username, *password;
+	settings_t *settings;
+	char *config;
 
-	type = androidjni_convert_jstring(env, jtype);
-	gateway = androidjni_convert_jstring(env, jgateway);
-	username = androidjni_convert_jstring(env, jusername);
-	password = androidjni_convert_jstring(env, jpassword);
+	config = androidjni_convert_jstring(env, jconfig);
+	settings = settings_create_string(config);
+	free(config);
 
-	initiate(type, gateway, username, password);
+	initiate(settings);
+}
+
+/**
+ * Utility function to verify proposal strings (static, so `this` is the class)
+ */
+JNI_METHOD_P(org_strongswan_android_utils, Utils, isProposalValid, jboolean,
+	jboolean ike, jstring proposal)
+{
+	proposal_t *prop;
+	char *str;
+	bool valid;
+
+	if (!library_init(NULL, "charon"))
+	{
+		library_deinit();
+		return FALSE;
+	}
+	str = androidjni_convert_jstring(env, proposal);
+	prop = proposal_create_from_string(ike ? PROTO_IKE : PROTO_ESP, str);
+	valid = prop != NULL;
+	DESTROY_IF(prop);
+	free(str);
+	library_deinit();
+	return valid;
+}
+
+/**
+ * Utility function to parse an IP address from a string (static, so `this` is the class)
+ */
+JNI_METHOD_P(org_strongswan_android_utils, Utils, parseInetAddressBytes, jbyteArray,
+	jstring address)
+{
+	jbyteArray bytes;
+	host_t *host;
+	char *str;
+
+	if (!library_init(NULL, "charon"))
+	{
+		library_deinit();
+		return NULL;
+	}
+	str = androidjni_convert_jstring(env, address);
+	host = host_create_from_string(str, 0);
+	if (!host)
+	{
+		free(str);
+		return NULL;
+	}
+	bytes = byte_array_from_chunk(env, host->get_address(host));
+	host->destroy(host);
+	free(str);
+	library_deinit();
+	return bytes;
 }

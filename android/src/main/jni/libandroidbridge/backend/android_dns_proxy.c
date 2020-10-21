@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2014 Tobias Brunner
- * Hochschule fuer Technik Rapperswil
+ * HSR Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -22,7 +22,7 @@
 
 #include "android_dns_proxy.h"
 
-#include <hydra.h>
+#include <daemon.h>
 #include <threading/rwlock.h>
 #include <collections/hashtable.h>
 #include <processing/jobs/callback_job.h>
@@ -95,7 +95,7 @@ static void socket_destroy(proxy_socket_t *this)
  */
 static u_int socket_hash(host_t *src)
 {
-	u_int16_t port = src->get_port(src);
+	uint16_t port = src->get_port(src);
 	return chunk_hash_inc(src->get_address(src),
 						  chunk_hash(chunk_from_thing(port)));
 }
@@ -121,8 +121,7 @@ static int open_socket(int family)
 		DBG1(DBG_NET, "could not open proxy socket: %s", strerror(errno));
 		return -1;
 	}
-	if (!hydra->kernel_interface->bypass_socket(hydra->kernel_interface,
-												skt, family))
+	if (!charon->kernel->bypass_socket(charon->kernel, skt, family))
 	{
 		DBG1(DBG_NET, "installing bypass policy for proxy socket failed");
 		close(skt);
@@ -223,14 +222,14 @@ CALLBACK(handle_timeout, job_requeue_t,
  * DNS header and masks to access flags
  */
 typedef struct __attribute__((packed)) {
-	u_int16_t id;
-	u_int16_t flags;
+	uint16_t id;
+	uint16_t flags;
 #define DNS_QR_MASK 0x8000
 #define DNS_OPCODE_MASK 0x7800
-	u_int16_t qdcount;
-	u_int16_t ancount;
-	u_int16_t nscount;
-	u_int16_t arcount;
+	uint16_t qdcount;
+	uint16_t ancount;
+	uint16_t nscount;
+	uint16_t arcount;
 } dns_header_t;
 
 /**
@@ -243,7 +242,7 @@ typedef struct __attribute__((packed)) {
 static char *extract_hostname(chunk_t data)
 {
 	char *hostname, *pos, *end;
-	u_int8_t label;
+	uint8_t label;
 
 	if (!data.len || data.len > 255)
 	{

@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2012-2013 Tobias Brunner
- * Hochschule fuer Technik Rapperswil
+ * Copyright (C) 2012-2015 Tobias Brunner
+ * HSR Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -64,6 +64,13 @@ struct network_manager_t {
 	 */
 	void (*remove_connectivity_cb)(network_manager_t *this,
 								   connectivity_cb_t cb);
+
+	/**
+	 * Check whether we currently have connectivity
+	 *
+	 * @return					TRUE if currently connected
+	 */
+	bool (*is_connected)(network_manager_t *this);
 
 	/**
 	 * Destroy a network_manager_t instance

@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2012 Tobias Brunner
  * Copyright (C) 2012 Andreas Steffen
- * Hochschule fuer Technik Rapperswil
+ * HSR Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -60,7 +60,7 @@ struct private_imc_android_state_t {
 	/**
 	 * Maximum PA-TNC message size for this TNCCS connection
 	 */
-	u_int32_t max_msg_len;
+	uint32_t max_msg_len;
 
 	/**
 	 * PA-TNC attribute segmentation contracts associated with TNCCS connection
@@ -99,12 +99,12 @@ METHOD(imc_state_t, set_flags, void,
 }
 
 METHOD(imc_state_t, set_max_msg_len, void,
-	private_imc_android_state_t *this, u_int32_t max_msg_len)
+	private_imc_android_state_t *this, uint32_t max_msg_len)
 {
 	this->max_msg_len = max_msg_len;
 }
 
-METHOD(imc_state_t, get_max_msg_len, u_int32_t,
+METHOD(imc_state_t, get_max_msg_len, uint32_t,
 	private_imc_android_state_t *this)
 {
 	return this->max_msg_len;
@@ -116,10 +116,14 @@ METHOD(imc_state_t, get_contracts, seg_contract_manager_t*,
 	return this->contracts;
 }
 
-METHOD(imc_state_t, change_state, void,
+METHOD(imc_state_t, change_state, TNC_ConnectionState,
 	private_imc_android_state_t *this, TNC_ConnectionState new_state)
 {
+	TNC_ConnectionState old;
+
+	old = this->state;
 	this->state = new_state;
+	return old;
 }
 
 METHOD(imc_state_t, set_result, void,

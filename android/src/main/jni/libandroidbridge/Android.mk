@@ -6,8 +6,10 @@ LOCAL_SRC_FILES := \
 android_jni.c \
 backend/android_attr.c \
 backend/android_creds.c \
+backend/android_fetcher.c \
 backend/android_dns_proxy.c \
 backend/android_private_key.c \
+backend/android_scheduler.c \
 backend/android_service.c \
 charonservice.c \
 kernel/android_ipsec.c \
@@ -33,6 +35,7 @@ LOCAL_C_INCLUDES += \
 	$(strongswan_PATH)/src/libimcv \
 	$(strongswan_PATH)/src/libtncif \
 	$(strongswan_PATH)/src/libtnccs \
+	$(strongswan_PATH)/src/libtpmtss \
 	$(strongswan_PATH)/src/libtls
 endif
 
@@ -56,7 +59,7 @@ LOCAL_LDLIBS := -llog
 LOCAL_SHARED_LIBRARIES := libstrongswan libipsec libcharon
 
 ifneq ($(strongswan_USE_BYOD),)
-LOCAL_SHARED_LIBRARIES += libimcv libtncif libtnccs
+LOCAL_SHARED_LIBRARIES += libimcv libtncif libtnccs libtpmtss
 endif
 
 include $(BUILD_SHARED_LIBRARY)

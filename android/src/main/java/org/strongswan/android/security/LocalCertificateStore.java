@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.regex.Pattern;
 
-import org.strongswan.android.logic.RNIpSecVpn;
 import org.strongswan.android.utils.Utils;
 import com.sijav.reactnativeipsecvpn.RNIpSecVpn;
 import android.content.Context;

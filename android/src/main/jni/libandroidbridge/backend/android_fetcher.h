@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2015 Tobias Brunner
+ * Copyright (C) 2017 Tobias Brunner
  * HSR Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -14,22 +14,20 @@
  */
 
 /**
- * @defgroup android_net android_net
- * @{ @ingroup android_kernel
+ * @defgroup android_fetcher android_fetcher
+ * @{ @ingroup android_backend
  */
 
-#ifndef ANDROID_NET_H_
-#define ANDROID_NET_H_
+#ifndef ANDROID_FETCHER_H_
+#define ANDROID_FETCHER_H_
 
 #include <library.h>
-#include <kernel/kernel_net.h>
 
 /**
- * Create an Android-specific kernel_net_t instance.
+ * Create an Android-specific fetcher instance based on SimpleFetcher
  *
- * @return			kernel_net_t instance
+ * @return						fetcher_t instance
  */
-kernel_net_t *kernel_android_net_create();
+fetcher_t *android_fetcher_create();
 
-
-#endif /** ANDROID_NET_H_ @}*/
+#endif /** ANDROID_FETCHER_H_ @}*/
