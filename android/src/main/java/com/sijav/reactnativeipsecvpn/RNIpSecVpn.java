@@ -39,6 +39,7 @@ import org.strongswan.android.ui.VpnProfileListFragment.OnVpnProfileSelectedList
 import static android.app.Activity.RESULT_OK;
 
 public class RNIpSecVpn extends ReactContextBaseJavaModule implements OnVpnProfileSelectedListener {
+    private static final String TAG = RNIpSecVpn.class.getSimpleName();
 
 	public static final boolean USE_BYOD = true;
 
@@ -139,6 +140,10 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule implements OnVpnProfi
     public void connect(String name, String address, String username, String password, String vpnType, Integer mtu,
             String b64CaCert, String b64UserCert, String userCertPassword, String certAlias, Promise promise)
             throws Exception {
+
+                Log.i(TAG, "Connecting");
+
+
         if (_RNIpSecVpnStateHandler.vpnStateService == null) {
             promise.reject("E_SERVICE_NOT_STARTED", "Service not started yet");
             return;
