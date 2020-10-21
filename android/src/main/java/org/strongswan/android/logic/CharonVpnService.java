@@ -732,7 +732,6 @@ public class CharonVpnService extends VpnService implements Runnable
 		System.loadLibrary("tncif");
 		System.loadLibrary("tnccs");
 		System.loadLibrary("imcv");
-		System.loadLibrary("hydra");
 		System.loadLibrary("charon");
 		System.loadLibrary("ipsec");
 		System.loadLibrary("androidbridge");
