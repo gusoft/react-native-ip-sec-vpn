@@ -71,6 +71,8 @@ apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion safeExtGet('compileSdkVersion', DEFAULT_COMPILE_SDK_VERSION)
+    ndkVersion "21.3.6528147"
+
     buildToolsVersion safeExtGet('buildToolsVersion', DEFAULT_BUILD_TOOLS_VERSION)
     defaultConfig {
         minSdkVersion safeExtGet('minSdkVersion', DEFAULT_MIN_SDK_VERSION)
@@ -84,7 +86,7 @@ android {
 
     sourceSets.main {
         jni.srcDirs = [] // Disables the default ndk-build call (with on-the-fly Android.mk files)
-        jniLibs.srcDir 'src/main/libs'
+        jniLibs.srcDir 'src/main/jniLibs'
     }
 
     compileOptions {

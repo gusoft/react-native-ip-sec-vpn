@@ -33,6 +33,7 @@ import java.util.List;
 import org.json.*;
 import org.strongswan.android.security.LocalCertificateKeyStoreProvider;
 import java.util.Enumeration;
+import org.strongswan.android.data.VpnProfile;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -91,7 +92,7 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void connect(String address, String username, String password, String vpnType, Integer mtu, String b64CaCert, String b64UserCert, String userCertPassword, String certAlias, Promise promise) throws Exception {
+    public void connect(String name, String address, String username, String password, String vpnType, Integer mtu, String b64CaCert, String b64UserCert, String userCertPassword, String certAlias, Promise promise) throws Exception {
         if(_RNIpSecVpnStateHandler.vpnStateService == null){
             promise.reject("E_SERVICE_NOT_STARTED", "Service not started yet");
             return;
@@ -113,12 +114,13 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
 
         // Prepare the VPN profile object
         VpnProfile vpnInfo = new VpnProfile();
+        vpnInfo.setName(name);
         vpnInfo.setGateway(address);
         vpnInfo.setUsername(username);
         vpnInfo.setPassword(password);
         vpnInfo.setVpnType(VpnType.IKEV2_CERT_EAP);
         vpnInfo.setUserCertificateAlias(username + "@" + address);
-        vpnInfo.setUserCertificatePassword(userCertPassword);
+        // vpnInfo.setUserCertificatePassword(userCertPassword);
 
         UserCredentialManager.getInstance().storeCredentials(b64UserCert.getBytes(), userCertPassword.toCharArray());
 
@@ -134,7 +136,7 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
         store.setCertificateEntry(null, certificate);
         TrustedCertificateManager.getInstance().reset();
 
-        _RNIpSecVpnStateHandler.vpnStateService.connect(profileInfo, true);
+        _RNIpSecVpnStateHandler.vpnStateService.startConnection(vpnInfo);
         promise.resolve(null);
     }
 
