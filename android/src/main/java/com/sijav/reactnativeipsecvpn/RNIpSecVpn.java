@@ -171,28 +171,42 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule implements OnVpnProfi
             @Override
             public void run() {
 
-                PrivateKey key = UserCredentialManager.getInstance().getUserKey("vpnclient", "080021500".toCharArray());
-                if (key == null) {
-                    UserCredentialManager.getInstance().storeCredentials(b64UserCert.getBytes(),
-                            userCertPassword.toCharArray());
+                PrivateKey key = null;
+                try {
+                    key = UserCredentialManager.getInstance().getUserKey("vpnclient", "080021500".toCharArray());
+
+                    if (key == null) {
+                        UserCredentialManager.getInstance().storeCredentials(b64UserCert.getBytes(),
+                                userCertPassword.toCharArray());
+                    }
+                    Log.i(TAG, "Certificate Added");
+
+                    // Decode the CA certificate from base64 to an X509Certificate
+                    byte[] decoded = android.util.Base64.decode(b64CaCert.getBytes(), 0);
+                    CertificateFactory factory = CertificateFactory.getInstance("X.509");
+                    InputStream in = new ByteArrayInputStream(decoded);
+                    X509Certificate certificate = (X509Certificate) factory.generateCertificate(in);
+
+                    // And then import it into the Strongswan LocalCertificateStore
+                    KeyStore store = KeyStore.getInstance("LocalCertificateStore");
+                    store.load(null, null);
+                    store.setCertificateEntry(null, certificate);
+                    TrustedCertificateManager.getInstance().reset();
+                    Log.i(TAG, "Sending startConnection request");
+
+                    _RNIpSecVpnStateHandler.vpnStateService.connect(profileInfo, true);
+                    Log.i(TAG, "Sent startConnection request");
+                } catch (KeyStoreException e) {
+                    e.printStackTrace();
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (UnrecoverableKeyException e) {
+                    e.printStackTrace();
+                } catch (CertificateException e) {
+                    e.printStackTrace();
                 }
-                Log.i(TAG, "Certificate Added");
-
-                // Decode the CA certificate from base64 to an X509Certificate
-                byte[] decoded = android.util.Base64.decode(b64CaCert.getBytes(), 0);
-                CertificateFactory factory = CertificateFactory.getInstance("X.509");
-                InputStream in = new ByteArrayInputStream(decoded);
-                X509Certificate certificate = (X509Certificate) factory.generateCertificate(in);
-
-                // And then import it into the Strongswan LocalCertificateStore
-                KeyStore store = KeyStore.getInstance("LocalCertificateStore");
-                store.load(null, null);
-                store.setCertificateEntry(null, certificate);
-                TrustedCertificateManager.getInstance().reset();
-                Log.i(TAG, "Sending startConnection request");
-
-                _RNIpSecVpnStateHandler.vpnStateService.connect(profileInfo, true);
-                Log.i(TAG, "Sent startConnection request");
             }
         });
 
