@@ -32,6 +32,7 @@ import java.io.*;
 import java.util.List;
 import org.json.*;
 import org.strongswan.android.security.LocalCertificateKeyStoreProvider;
+import java.util.Enumeration;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -42,6 +43,10 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
 
     private RNIpSecVpnStateHandler _RNIpSecVpnStateHandler;
 
+    static {
+        Security.addProvider(new LocalCertificateKeyStoreProvider());
+    }
+
     RNIpSecVpn(ReactApplicationContext context) {
         super(context);
         // Load charon bridge
@@ -50,7 +55,6 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
         Intent vpnStateServiceIntent = new Intent(context, VpnStateService.class);
         _RNIpSecVpnStateHandler = new RNIpSecVpnStateHandler(this);
         context.bindService(vpnStateServiceIntent, _RNIpSecVpnStateHandler, Service.BIND_AUTO_CREATE);
-        Security.addProvider(new LocalCertificateKeyStoreProvider());
     }
 
 
@@ -107,7 +111,14 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
             return;
         }
 
-        _RNIpSecVpnStateHandler.vpnStateService.setState(VpnStateService.State.CONNECTING);
+        // Prepare the VPN profile object
+        VpnProfile vpnInfo = new VpnProfile();
+        vpnInfo.setGateway(address);
+        vpnInfo.setUsername(username);
+        vpnInfo.setPassword(password);
+        vpnInfo.setVpnType(VpnType.IKEV2_CERT_EAP);
+        vpnInfo.setUserCertificateAlias(username + "@" + address);
+        vpnInfo.setUserCertificatePassword(userCertPassword);
 
         UserCredentialManager.getInstance().storeCredentials(b64UserCert.getBytes(), userCertPassword.toCharArray());
 
@@ -116,22 +127,13 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
          CertificateFactory factory = CertificateFactory.getInstance("X.509");
          InputStream in = new ByteArrayInputStream(decoded);
          X509Certificate certificate = (X509Certificate)factory.generateCertificate(in);
- 
-         // And then import it into the Strongswan LocalCertificateStore
-         KeyStore store = KeyStore.getInstance("LocalCertificateStore");
 
-         store.load(null, null); // create keystore
-         store.setCertificateEntry(null, certificate);
-         TrustedCertificateManager.getInstance().reset();
+        // And then import it into the Strongswan LocalCertificateStore
+        KeyStore store = KeyStore.getInstance("LocalCertificateStore");
+        store.load(null, null);
+        store.setCertificateEntry(null, certificate);
+        TrustedCertificateManager.getInstance().reset();
 
-        Bundle profileInfo = new Bundle();
-        profileInfo.putString("Address", address);
-        profileInfo.putString("UserName", username);
-        profileInfo.putString("Password", password);
-        profileInfo.putString("VpnType", vpnType);
-        profileInfo.putString("CertAlias", certAlias);
-        profileInfo.putString("UserCertPassword", userCertPassword);
-        profileInfo.putInt("MTU", mtu);
         _RNIpSecVpnStateHandler.vpnStateService.connect(profileInfo, true);
         promise.resolve(null);
     }
