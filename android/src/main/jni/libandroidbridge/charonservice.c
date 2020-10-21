@@ -635,6 +635,8 @@ static void __attribute__ ((constructor))register_logger()
 JNI_METHOD(CharonVpnService, initializeCharon, jboolean,
 	jobject builder, jstring jlogfile, jstring jappdir, jboolean byod)
 {
+	DBG1(DBG_DMN, "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+INIT-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+");
+
 	struct sigaction action;
 	struct utsname utsname;
 	char *logfile, *appdir, *plugins;
