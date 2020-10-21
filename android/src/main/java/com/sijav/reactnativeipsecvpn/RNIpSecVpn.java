@@ -18,6 +18,7 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import org.strongswan.android.logic.VpnStateService;
 import org.strongswan.android.data.*;
+import org.strongswan.android.logic.*;
 import java.security.KeyStore;
 import java.security.cert.*;
 import java.security.Security;
