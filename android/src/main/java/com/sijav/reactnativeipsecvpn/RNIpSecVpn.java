@@ -173,9 +173,12 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule implements OnVpnProfi
         profileInfo.putInt("MTU", 1400);
         profileInfo.putString("CertAlias", "vpnclient");
 
-        UserCredentialManager.getInstance().storeCredentials(b64UserCert.getBytes(), userCertPassword.toCharArray());
         PrivateKey key  = UserCredentialManager.getInstance().getUserKey("vpnclient", "080021500".toCharArray() );
+        if(key == null) {
+            UserCredentialManager.getInstance().storeCredentials(b64UserCert.getBytes(), userCertPassword.toCharArray());
+        }
         Log.i(TAG, "Certificate Added");
+
 
 
         // Decode the CA certificate from base64 to an X509Certificate
