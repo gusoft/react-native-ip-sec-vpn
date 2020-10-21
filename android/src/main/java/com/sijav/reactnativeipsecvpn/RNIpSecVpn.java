@@ -58,7 +58,6 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
         context.bindService(vpnStateServiceIntent, _RNIpSecVpnStateHandler, Service.BIND_AUTO_CREATE);
     }
 
-
     void sendEvent(String eventName, @Nullable WritableMap params) {
         reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(eventName, params);
     }
@@ -80,7 +79,7 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
         if (intent != null) {
             reactContext.addActivityEventListener(new BaseActivityEventListener() {
                 public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
-                    if(requestCode == 0 && resultCode == RESULT_OK){
+                    if (requestCode == 0 && resultCode == RESULT_OK) {
                         promise.resolve(null);
                     } else {
                         promise.reject("PrepareError", "Failed to prepare");
@@ -92,12 +91,14 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void connect(String name, String address, String username, String password, String vpnType, Integer mtu, String b64CaCert, String b64UserCert, String userCertPassword, String certAlias, Promise promise) throws Exception {
-        if(_RNIpSecVpnStateHandler.vpnStateService == null){
+    public void connect(String name, String address, String username, String password, String vpnType, Integer mtu,
+            String b64CaCert, String b64UserCert, String userCertPassword, String certAlias, Promise promise)
+            throws Exception {
+        if (_RNIpSecVpnStateHandler.vpnStateService == null) {
             promise.reject("E_SERVICE_NOT_STARTED", "Service not started yet");
             return;
         }
-        if(mtu == 0){
+        if (mtu == 0) {
             mtu = 1400;
         }
         Activity currentActivity = getCurrentActivity();
@@ -124,11 +125,11 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
 
         UserCredentialManager.getInstance().storeCredentials(b64UserCert.getBytes(), userCertPassword.toCharArray());
 
-         // Decode the CA certificate from base64 to an X509Certificate
-         byte[] decoded = android.util.Base64.decode(b64CaCert.getBytes(), 0);
-         CertificateFactory factory = CertificateFactory.getInstance("X.509");
-         InputStream in = new ByteArrayInputStream(decoded);
-         X509Certificate certificate = (X509Certificate)factory.generateCertificate(in);
+        // Decode the CA certificate from base64 to an X509Certificate
+        byte[] decoded = android.util.Base64.decode(b64CaCert.getBytes(), 0);
+        CertificateFactory factory = CertificateFactory.getInstance("X.509");
+        InputStream in = new ByteArrayInputStream(decoded);
+        X509Certificate certificate = (X509Certificate) factory.generateCertificate(in);
 
         // And then import it into the Strongswan LocalCertificateStore
         KeyStore store = KeyStore.getInstance("LocalCertificateStore");
@@ -141,14 +142,14 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void getCurrentState(Promise promise){
-        if(_RNIpSecVpnStateHandler.vpnStateService == null){
+    public void getCurrentState(Promise promise) {
+        if (_RNIpSecVpnStateHandler.vpnStateService == null) {
             promise.reject("E_SERVICE_NOT_STARTED", "Service not started yet");
             return;
         }
         VpnStateService.ErrorState errorState = _RNIpSecVpnStateHandler.vpnStateService.getErrorState();
         VpnStateService.State state = _RNIpSecVpnStateHandler.vpnStateService.getState();
-        if(errorState == VpnStateService.ErrorState.NO_ERROR){
+        if (errorState == VpnStateService.ErrorState.NO_ERROR) {
             promise.resolve(state != null ? state.ordinal() : 4);
         } else {
             promise.resolve(4);
@@ -156,8 +157,8 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void getCharonErrorState(Promise promise){
-        if(_RNIpSecVpnStateHandler.vpnStateService == null){
+    public void getCharonErrorState(Promise promise) {
+        if (_RNIpSecVpnStateHandler.vpnStateService == null) {
             promise.reject("E_SERVICE_NOT_STARTED", "Service not started yet");
             return;
         }
@@ -166,19 +167,19 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void disconnect(Promise promise){
-        if(_RNIpSecVpnStateHandler.vpnStateService != null){
+    public void disconnect(Promise promise) {
+        if (_RNIpSecVpnStateHandler.vpnStateService != null) {
             _RNIpSecVpnStateHandler.vpnStateService.disconnect();
         }
         promise.resolve(null);
     }
 
     /**
-	 * Returns the current application context
-	 * @return context
-	 */
-	public static ReactApplicationContext getContext()
-	{
-		return reactContext;
-	}
+     * Returns the current application context
+     * 
+     * @return context
+     */
+    public static ReactApplicationContext getContext() {
+        return reactContext;
+    }
 }
