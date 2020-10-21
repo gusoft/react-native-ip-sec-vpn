@@ -34,17 +34,43 @@ import org.json.*;
 import org.strongswan.android.security.LocalCertificateKeyStoreProvider;
 import java.util.Enumeration;
 import org.strongswan.android.data.VpnProfile;
+import org.strongswan.android.ui.VpnProfileListFragment.OnVpnProfileSelectedListener;
 
 import static android.app.Activity.RESULT_OK;
 
-public class RNIpSecVpn extends ReactContextBaseJavaModule {
+public class RNIpSecVpn extends ReactContextBaseJavaModule implements OnVpnProfileSelectedListener {
+
+	public static final boolean USE_BYOD = true;
+
+	private static final String DIALOG_TAG = "Dialog";
 
     @SuppressLint("StaticFieldLeak")
     private static ReactApplicationContext reactContext;
 
     private RNIpSecVpnStateHandler _RNIpSecVpnStateHandler;
 
+    /*
+    * The libraries are extracted to /data/data/org.strongswan.android/...
+    * during installation.  On newer releases most are loaded in JNI_OnLoad.
+    */
     static {
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2)
+		{
+			System.loadLibrary("strongswan");
+
+			if (RNIpSecVpn.USE_BYOD)
+			{
+				System.loadLibrary("tpmtss");
+				System.loadLibrary("tncif");
+				System.loadLibrary("tnccs");
+				System.loadLibrary("imcv");
+			}
+
+			System.loadLibrary("charon");
+			System.loadLibrary("ipsec");
+		}
+		System.loadLibrary("androidbridge");
+	    
         Security.addProvider(new LocalCertificateKeyStoreProvider());
     }
 
@@ -56,7 +82,26 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule {
         Intent vpnStateServiceIntent = new Intent(context, VpnStateService.class);
         _RNIpSecVpnStateHandler = new RNIpSecVpnStateHandler(this);
         context.bindService(vpnStateServiceIntent, _RNIpSecVpnStateHandler, Service.BIND_AUTO_CREATE);
+        new LoadCertificatesTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
+
+    @Override
+    public void onVpnProfileSelected(VpnProfile profile)
+    {
+        // startVpnProfile(profile, true);
+    }
+
+    /**
+	 * Class that loads the cached CA certificates.
+	 */
+	private class LoadCertificatesTask extends AsyncTask<Void, Void, TrustedCertificateManager>
+	{
+		@Override
+		protected TrustedCertificateManager doInBackground(Void... params)
+		{
+			return TrustedCertificateManager.getInstance().load();
+		}
+	}
 
     void sendEvent(String eventName, @Nullable WritableMap params) {
         reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(eventName, params);

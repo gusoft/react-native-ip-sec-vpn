@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2014 Tobias Brunner
- * Hochschule fuer Technik Rapperswil
+ * HSR Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -21,6 +21,8 @@ import org.strongswan.android.security.LocalCertificateKeyStoreProvider;
 
 import android.app.Application;
 import android.content.Context;
+import android.os.Build;
+import com.sijav.reactnativeipsecvpn.RNIpSecVpn;
 
 public class StrongSwanApplication extends Application
 {
@@ -44,5 +46,29 @@ public class StrongSwanApplication extends Application
 	public static Context getContext()
 	{
 		return StrongSwanApplication.mContext;
+	}
+
+	/*
+	 * The libraries are extracted to /data/data/org.strongswan.android/...
+	 * during installation.  On newer releases most are loaded in JNI_OnLoad.
+	 */
+	static
+	{
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2)
+		{
+			System.loadLibrary("strongswan");
+
+			if (RNIpSecVpn.USE_BYOD)
+			{
+				System.loadLibrary("tpmtss");
+				System.loadLibrary("tncif");
+				System.loadLibrary("tnccs");
+				System.loadLibrary("imcv");
+			}
+
+			System.loadLibrary("charon");
+			System.loadLibrary("ipsec");
+		}
+		System.loadLibrary("androidbridge");
 	}
 }

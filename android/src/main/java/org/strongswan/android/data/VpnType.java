@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2012-2014 Tobias Brunner
- * Hochschule fuer Technik Rapperswil
+ * HSR Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -24,7 +24,7 @@ public enum VpnType
 	IKEV2_CERT("ikev2-cert", EnumSet.of(VpnTypeFeature.CERTIFICATE)),
 	IKEV2_CERT_EAP("ikev2-cert-eap", EnumSet.of(VpnTypeFeature.USER_PASS, VpnTypeFeature.CERTIFICATE)),
 	IKEV2_EAP_TLS("ikev2-eap-tls", EnumSet.of(VpnTypeFeature.CERTIFICATE)),
-	IKEV2_BYOD_EAP("ikev2-byod-eap", EnumSet.of(VpnTypeFeature.USER_PASS, VpnTypeFeature.CERTIFICATE, VpnTypeFeature.BYOD));
+	IKEV2_BYOD_EAP("ikev2-byod-eap", EnumSet.of(VpnTypeFeature.USER_PASS, VpnTypeFeature.BYOD));
 
 	/**
 	 * Features of a VPN type.
