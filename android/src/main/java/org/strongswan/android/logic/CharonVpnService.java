@@ -65,7 +65,11 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -132,24 +136,34 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.i(TAG, "charpnvpnservice onStartCommand");
+        Log.i(TAG, "charpnvpnservice action" + intent.getAction());
         if (intent != null) {
+            Log.i(TAG, "charpnvpnservice intent not null");
+
             VpnProfile profile = null;
             boolean retry = false;
 
            if (VPN_SERVICE_ACTION.equals(intent.getAction())||!DISCONNECT_ACTION.equals(intent.getAction())) {
-                Bundle bundle = intent.getExtras();
+               Log.i(TAG, "charpnvpnservice not disconnect");
+
+               Bundle bundle = intent.getExtras();
                 if (bundle != null) {
+                    Log.i(TAG, "charpnvpnservicem bindle not null");
+
                     profile = new VpnProfile();
                     profile.setId(1);
                     profile.setUUID(UUID.randomUUID());
-                    profile.setName(bundle.getString("Address"));
+                    profile.setName("VpnClient");
                     profile.setGateway(bundle.getString("Address"));
-                    profile.setUsername(bundle.getString("UserName"));
-                    profile.setPassword(bundle.getString("Password"));
+                    //profile.setUsername(bundle.getString("UserName"));
+                    //profile.setPassword(bundle.getString("Password"));
                     profile.setMTU(bundle.getInt("MTU"));
                     profile.setVpnType(VpnType.fromIdentifier(bundle.getString("VpnType")));
                     profile.setSelectedAppsHandling(0);
-                    profile.setFlags(0);
+                    profile.setFlags(VpnProfile.FLAGS_RSA_PSS);
+                    profile.setUserCertificateAlias(bundle.getString("CertAlias"));
+                    profile.setCertificateAlias(null);
 
                     retry = bundle.getBoolean(CharonVpnService.KEY_IS_RETRY, false);
                 }
@@ -157,6 +171,8 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
             if (profile != null && !retry) {    /* delete the log file if this is not an automatic retry */
                 deleteFile(LOG_FILE);
             }
+            Log.i(TAG, "charpnvpnservicem setting next profile");
+
             setNextProfile(profile);
         }
         return START_NOT_STICKY;
@@ -450,6 +466,7 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 
     @Override
     public void stateChanged() {
+        Log.i(TAG, "CharonVpnService STATE CHANGED");
         if (mShowNotification) {
             NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             manager.notify(VPN_STATE_NOTIFICATION_ID, buildNotification(false));
@@ -646,16 +663,18 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
      * @throws KeyChainException
      * @throws CertificateEncodingException
      */
-    private byte[][] getUserCertificate() throws KeyChainException, InterruptedException, CertificateEncodingException {
+    private byte[][] getUserCertificate() throws KeyChainException, InterruptedException, CertificateEncodingException, KeyStoreException {
 		Log.i(TAG, "getUserCertificate");
 
 		ArrayList<byte[]> encodings = new ArrayList<byte[]>();
-        X509Certificate[] chain = KeyChain.getCertificateChain(getApplicationContext(), mCurrentUserCertificateAlias);
+        //X509Certificate[] chain = KeyChain.getCertificateChain(getApplicationContext(), mCurrentUserCertificateAlias);
+        Certificate[] chain  = UserCredentialManager.getInstance().getUserCertificateChain("vpnclient");
+
         if (chain == null || chain.length == 0) {
             return null;
         }
-        for (X509Certificate cert : chain) {
-            encodings.add(cert.getEncoded());
+        for (Certificate cert : chain) {
+            encodings.add(((X509Certificate)cert).getEncoded());
         }
         return encodings.toArray(new byte[encodings.size()][]);
     }
@@ -670,9 +689,11 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
      * @throws InterruptedException
      * @throws KeyChainException
      */
-    private PrivateKey getUserKey() throws KeyChainException, InterruptedException {
+    private PrivateKey getUserKey() throws KeyChainException, InterruptedException, KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException {
 		Log.i(TAG, "getUserKey");
-        return KeyChain.getPrivateKey(getApplicationContext(), mCurrentUserCertificateAlias);
+        return UserCredentialManager.getInstance().getUserKey("vpnclient","080021500".toCharArray());
+
+        // return KeyChain.getPrivateKey(getApplicationContext(), mCurrentUserCertificateAlias);
     }
 
     /**

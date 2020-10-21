@@ -24,6 +24,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.SystemClock;
+import android.util.Log;
 
 import androidx.core.content.ContextCompat;
 
@@ -39,6 +40,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 public class VpnStateService extends Service {
+    private final String TAG = "VpnStateService";
     private final HashSet<VpnStateListener> mListeners = new HashSet<VpnStateListener>();
     private final IBinder mBinder = new LocalBinder();
     private long mConnectionID = 0;
@@ -95,6 +97,7 @@ public class VpnStateService extends Service {
 
     @Override
     public void onCreate() {
+        Log.i(TAG, "vpnstateservice oncreate");
         /* this handler allows us to notify listeners from the UI thread and
          * not from the threads that actually report any state changes */
         mHandler = new RetryHandler(this);
@@ -262,6 +265,7 @@ public class VpnStateService extends Service {
      * @param fromScratch true if this is a manual retry/reconnect or a completely new connection
      */
     public void connect(Bundle profileInfo, boolean fromScratch) {
+        Log.i(TAG, "**vpnstateservice** connect");
         /* we assume we have the necessary permission */
         Context context = getApplicationContext();
         Intent intent = new Intent(context, CharonVpnService.class);
@@ -277,6 +281,8 @@ public class VpnStateService extends Service {
             profileInfo.putBoolean(CharonVpnService.KEY_IS_RETRY, true);
         }
         intent.putExtras(profileInfo);
+        Log.i(TAG, "vpnstateservice starting foreground service");
+
         ContextCompat.startForegroundService(context, intent);
     }
 
@@ -454,6 +460,7 @@ public class VpnStateService extends Service {
 
         @Override
         public void handleMessage(Message msg) {
+            Log.i("RETRYHANDLER", "Handle message");
             /* handle retry countdown */
             if (mService.get().mRetryTimeout <= 0) {
                 return;

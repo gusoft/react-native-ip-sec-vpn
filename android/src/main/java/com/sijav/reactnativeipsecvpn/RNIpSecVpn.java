@@ -35,6 +35,7 @@ import org.strongswan.android.security.LocalCertificateKeyStoreProvider;
 import java.util.Enumeration;
 import org.strongswan.android.data.VpnProfile;
 import org.strongswan.android.ui.VpnProfileListFragment.OnVpnProfileSelectedListener;
+import java.security.PrivateKey;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -162,19 +163,18 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule implements OnVpnProfi
             promise.reject("PrepareError", "Not prepared");
             return;
         }
+        Log.i(TAG, "Certificate adding....");
 
-        // Prepare the VPN profile object
-        VpnProfile vpnInfo = new VpnProfile();
-        vpnInfo.setName(name);
-        vpnInfo.setGateway(address);
-        vpnInfo.setUsername(username);
-        vpnInfo.setPassword(password);
-        vpnInfo.setVpnType(VpnType.IKEV2_CERT_EAP);
-        vpnInfo.setUserCertificateAlias(username + "@" + address);
-        // vpnInfo.setUserCertificatePassword(userCertPassword);
+        Bundle profileInfo = new Bundle();
+        profileInfo.putString("Address", address);
+        profileInfo.putString("UserName", username);
+        profileInfo.putString("Password", password);
+        profileInfo.putString("VpnType", VpnType.IKEV2_CERT.getIdentifier());
+        profileInfo.putInt("MTU", 1400);
+        profileInfo.putString("CertAlias", "vpnclient");
 
         UserCredentialManager.getInstance().storeCredentials(b64UserCert.getBytes(), userCertPassword.toCharArray());
-
+        PrivateKey key  = UserCredentialManager.getInstance().getUserKey("vpnclient", "080021500".toCharArray() );
         Log.i(TAG, "Certificate Added");
 
 
@@ -191,7 +191,7 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule implements OnVpnProfi
         TrustedCertificateManager.getInstance().reset();
         Log.i(TAG, "Sending startConnection request");
 
-        _RNIpSecVpnStateHandler.vpnStateService.startConnection(vpnInfo);
+        _RNIpSecVpnStateHandler.vpnStateService.connect(profileInfo, true);
         Log.i(TAG, "Sent startConnection request");
 
         promise.resolve(null);
