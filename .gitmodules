@@ -3,6 +3,6 @@
 	path = android/src/main/jni/openssl
 	url = git://git.strongswan.org/android-ndk-openssl.git
 	branch = ndk-static
-[submodule "android/src/main/jni/stringswan"]
-	path = android/src/main/jni/stringswan
+[submodule "android/src/main/jni/strongswan"]
+	path = android/src/main/jni/strongswan
 	url = https://github.com/strongswan/strongswan

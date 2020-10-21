@@ -31,7 +31,6 @@ project.xcworkspace
 # Android/IntelliJ
 #
 build/
-libs/
 .idea
 .gradle
 local.properties

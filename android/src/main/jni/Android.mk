@@ -70,7 +70,6 @@ strongswan_BUILD := \
 	libandroidbridge \
 	strongswan/src/libipsec \
 	strongswan/src/libcharon \
-	strongswan/src/libhydra \
 	strongswan/src/libstrongswan
 
 ifneq ($(strongswan_USE_BYOD),)
