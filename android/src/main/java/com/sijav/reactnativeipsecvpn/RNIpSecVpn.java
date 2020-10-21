@@ -141,7 +141,7 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule implements OnVpnProfi
             String b64CaCert, String b64UserCert, String userCertPassword, String certAlias, Promise promise)
             throws Exception {
 
-                Log.i(TAG, "Connecting");
+        Log.i(TAG, "Connecting");
 
 
         if (_RNIpSecVpnStateHandler.vpnStateService == null) {
@@ -175,6 +175,9 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule implements OnVpnProfi
 
         UserCredentialManager.getInstance().storeCredentials(b64UserCert.getBytes(), userCertPassword.toCharArray());
 
+        Log.i(TAG, "Certificate Added");
+
+
         // Decode the CA certificate from base64 to an X509Certificate
         byte[] decoded = android.util.Base64.decode(b64CaCert.getBytes(), 0);
         CertificateFactory factory = CertificateFactory.getInstance("X.509");
@@ -186,8 +189,11 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule implements OnVpnProfi
         store.load(null, null);
         store.setCertificateEntry(null, certificate);
         TrustedCertificateManager.getInstance().reset();
+        Log.i(TAG, "Sending startConnection request");
 
         _RNIpSecVpnStateHandler.vpnStateService.startConnection(vpnInfo);
+        Log.i(TAG, "Sent startConnection request");
+
         promise.resolve(null);
     }
 

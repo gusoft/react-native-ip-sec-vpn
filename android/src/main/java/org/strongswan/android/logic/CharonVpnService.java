@@ -215,6 +215,8 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 
     @Override
     public void run() {
+		Log.i(TAG, "charon run");
+
         while (true) {
             synchronized (this) {
                 try {
@@ -243,7 +245,9 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 
                         SimpleFetcher.enable();
                         addNotification();
-                        mBuilderAdapter.setProfile(mCurrentProfile);
+						mBuilderAdapter.setProfile(mCurrentProfile);
+						Log.i(TAG, "initialising charon");
+
                         if (initializeCharon(mBuilderAdapter, mLogFile, mAppDir, mCurrentProfile.getVpnType().has(VpnTypeFeature.BYOD))) {
                             Log.i(TAG, "charon started");
 
@@ -531,6 +535,8 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
      * @param status new state
      */
     public void updateStatus(int status) {
+		Log.i(TAG, "JNI updateStatus");
+
         switch (status) {
             case STATE_CHILD_SA_DOWN:
                 if (!mIsDisconnecting) {
@@ -571,6 +577,8 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
      * @param value new state
      */
     public void updateImcState(int value) {
+		Log.i(TAG, "updateImcState");
+
         ImcState state = ImcState.fromValue(value);
         if (state != null) {
             setImcState(state);
@@ -584,6 +592,8 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
      * @param xml XML text
      */
     public void addRemediationInstruction(String xml) {
+		Log.i(TAG, "addRemediationInstruction");
+
         for (RemediationInstruction instruction : RemediationInstruction.fromXml(xml)) {
             synchronized (mServiceLock) {
                 if (mService != null) {
@@ -600,6 +610,8 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
      * @return a list of DER encoded CA certificates
      */
     private byte[][] getTrustedCertificates() {
+		Log.i(TAG, "getTrustedCertificates");
+
         ArrayList<byte[]> certs = new ArrayList<byte[]>();
         TrustedCertificateManager certman = TrustedCertificateManager.getInstance().load();
         try {
@@ -635,7 +647,9 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
      * @throws CertificateEncodingException
      */
     private byte[][] getUserCertificate() throws KeyChainException, InterruptedException, CertificateEncodingException {
-        ArrayList<byte[]> encodings = new ArrayList<byte[]>();
+		Log.i(TAG, "getUserCertificate");
+
+		ArrayList<byte[]> encodings = new ArrayList<byte[]>();
         X509Certificate[] chain = KeyChain.getCertificateChain(getApplicationContext(), mCurrentUserCertificateAlias);
         if (chain == null || chain.length == 0) {
             return null;
@@ -657,6 +671,7 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
      * @throws KeyChainException
      */
     private PrivateKey getUserKey() throws KeyChainException, InterruptedException {
+		Log.i(TAG, "getUserKey");
         return KeyChain.getPrivateKey(getApplicationContext(), mCurrentUserCertificateAlias);
     }
 
@@ -693,6 +708,8 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
         private PacketDropper mDropper = new PacketDropper();
 
         public synchronized void setProfile(VpnProfile profile) {
+			Log.i(TAG, "setProfile");
+
             mProfile = profile;
             mBuilder = createBuilder(mProfile.getName());
             mCache = new BuilderCache(mProfile);
@@ -1101,6 +1118,8 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
      * Function called via JNI to determine information about the Android version.
      */
     private static String getAndroidVersion() {
+		Log.i(TAG, "JNI getAndroidVersion");
+
         String version = "Android " + Build.VERSION.RELEASE + " - " + Build.DISPLAY;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             version += "/" + Build.VERSION.SECURITY_PATCH;
@@ -1112,6 +1131,8 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
      * Function called via JNI to determine information about the device.
      */
     private static String getDeviceString() {
+		Log.i(TAG, "JNI getDeviceString");
+
         return Build.MODEL + " - " + Build.BRAND + "/" + Build.PRODUCT + "/" + Build.MANUFACTURER;
     }
 }
