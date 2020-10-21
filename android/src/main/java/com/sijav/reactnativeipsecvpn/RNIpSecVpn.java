@@ -42,9 +42,9 @@ import static android.app.Activity.RESULT_OK;
 public class RNIpSecVpn extends ReactContextBaseJavaModule implements OnVpnProfileSelectedListener {
     private static final String TAG = RNIpSecVpn.class.getSimpleName();
 
-	public static final boolean USE_BYOD = true;
+    public static final boolean USE_BYOD = true;
 
-	private static final String DIALOG_TAG = "Dialog";
+    private static final String DIALOG_TAG = "Dialog";
 
     @SuppressLint("StaticFieldLeak")
     private static ReactApplicationContext reactContext;
@@ -52,27 +52,25 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule implements OnVpnProfi
     private RNIpSecVpnStateHandler _RNIpSecVpnStateHandler;
 
     /*
-    * The libraries are extracted to /data/data/org.strongswan.android/...
-    * during installation.  On newer releases most are loaded in JNI_OnLoad.
-    */
+     * The libraries are extracted to /data/data/org.strongswan.android/... during
+     * installation. On newer releases most are loaded in JNI_OnLoad.
+     */
     static {
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2)
-		{
-			System.loadLibrary("strongswan");
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            System.loadLibrary("strongswan");
 
-			if (RNIpSecVpn.USE_BYOD)
-			{
-				System.loadLibrary("tpmtss");
-				System.loadLibrary("tncif");
-				System.loadLibrary("tnccs");
-				System.loadLibrary("imcv");
-			}
+            if (RNIpSecVpn.USE_BYOD) {
+                System.loadLibrary("tpmtss");
+                System.loadLibrary("tncif");
+                System.loadLibrary("tnccs");
+                System.loadLibrary("imcv");
+            }
 
-			System.loadLibrary("charon");
-			System.loadLibrary("ipsec");
-		}
-		System.loadLibrary("androidbridge");
-	    
+            System.loadLibrary("charon");
+            System.loadLibrary("ipsec");
+        }
+        System.loadLibrary("androidbridge");
+
         Security.addProvider(new LocalCertificateKeyStoreProvider());
     }
 
@@ -88,22 +86,19 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule implements OnVpnProfi
     }
 
     @Override
-    public void onVpnProfileSelected(VpnProfile profile)
-    {
+    public void onVpnProfileSelected(VpnProfile profile) {
         // startVpnProfile(profile, true);
     }
 
     /**
-	 * Class that loads the cached CA certificates.
-	 */
-	private class LoadCertificatesTask extends AsyncTask<Void, Void, TrustedCertificateManager>
-	{
-		@Override
-		protected TrustedCertificateManager doInBackground(Void... params)
-		{
-			return TrustedCertificateManager.getInstance().load();
-		}
-	}
+     * Class that loads the cached CA certificates.
+     */
+    private class LoadCertificatesTask extends AsyncTask<Void, Void, TrustedCertificateManager> {
+        @Override
+        protected TrustedCertificateManager doInBackground(Void... params) {
+            return TrustedCertificateManager.getInstance().load();
+        }
+    }
 
     void sendEvent(String eventName, @Nullable WritableMap params) {
         reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(eventName, params);
@@ -144,7 +139,6 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule implements OnVpnProfi
 
         Log.i(TAG, "Connecting");
 
-
         if (_RNIpSecVpnStateHandler.vpnStateService == null) {
             promise.reject("E_SERVICE_NOT_STARTED", "Service not started yet");
             return;
@@ -173,29 +167,34 @@ public class RNIpSecVpn extends ReactContextBaseJavaModule implements OnVpnProfi
         profileInfo.putInt("MTU", 1400);
         profileInfo.putString("CertAlias", "vpnclient");
 
-        PrivateKey key  = UserCredentialManager.getInstance().getUserKey("vpnclient", "080021500".toCharArray() );
-        if(key == null) {
-            UserCredentialManager.getInstance().storeCredentials(b64UserCert.getBytes(), userCertPassword.toCharArray());
-        }
-        Log.i(TAG, "Certificate Added");
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
 
+                PrivateKey key = UserCredentialManager.getInstance().getUserKey("vpnclient", "080021500".toCharArray());
+                if (key == null) {
+                    UserCredentialManager.getInstance().storeCredentials(b64UserCert.getBytes(),
+                            userCertPassword.toCharArray());
+                }
+                Log.i(TAG, "Certificate Added");
 
+                // Decode the CA certificate from base64 to an X509Certificate
+                byte[] decoded = android.util.Base64.decode(b64CaCert.getBytes(), 0);
+                CertificateFactory factory = CertificateFactory.getInstance("X.509");
+                InputStream in = new ByteArrayInputStream(decoded);
+                X509Certificate certificate = (X509Certificate) factory.generateCertificate(in);
 
-        // Decode the CA certificate from base64 to an X509Certificate
-        byte[] decoded = android.util.Base64.decode(b64CaCert.getBytes(), 0);
-        CertificateFactory factory = CertificateFactory.getInstance("X.509");
-        InputStream in = new ByteArrayInputStream(decoded);
-        X509Certificate certificate = (X509Certificate) factory.generateCertificate(in);
+                // And then import it into the Strongswan LocalCertificateStore
+                KeyStore store = KeyStore.getInstance("LocalCertificateStore");
+                store.load(null, null);
+                store.setCertificateEntry(null, certificate);
+                TrustedCertificateManager.getInstance().reset();
+                Log.i(TAG, "Sending startConnection request");
 
-        // And then import it into the Strongswan LocalCertificateStore
-        KeyStore store = KeyStore.getInstance("LocalCertificateStore");
-        store.load(null, null);
-        store.setCertificateEntry(null, certificate);
-        TrustedCertificateManager.getInstance().reset();
-        Log.i(TAG, "Sending startConnection request");
-
-        _RNIpSecVpnStateHandler.vpnStateService.connect(profileInfo, true);
-        Log.i(TAG, "Sent startConnection request");
+                _RNIpSecVpnStateHandler.vpnStateService.connect(profileInfo, true);
+                Log.i(TAG, "Sent startConnection request");
+            }
+        });
 
         promise.resolve(null);
     }
